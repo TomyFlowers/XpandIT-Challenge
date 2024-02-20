@@ -25,16 +25,18 @@ object Main {
 
     //Part 1
     //Converts "Sentiment_Polarity" column from String to Double and transforms NULL to 0
-    ////val castedUserReviews= userReviews.withColumn("Sentiment_Polarity", col("Sentiment_Polarity").cast("double")).na.fill(0.0)
-    ////val df_1 = castedUserReviews.groupBy("App").agg(avg("Sentiment_Polarity").as("Average_Sentiment_Polarity"))
+    val castedUserReviews= userReviews.withColumn("Sentiment_Polarity", col("Sentiment_Polarity").cast("double")).na.fill(0.0)
+    val df_1 = castedUserReviews.groupBy("App").agg(avg("Sentiment_Polarity").as("Average_Sentiment_Polarity"))
 
     //Part 2
-
     val filteredApps = playStoreApps.withColumn("Rating", coalesce(col("Rating"), lit(0)))
       .filter(col("Rating") >= 4)
       .filter(col("Rating") <= 5)
+      .repartition(4) //Error caused by sorting without repartitioning
+      .orderBy(col("Rating").desc)
 
     Utils.saveCSV(filteredApps,"outputs","df_2",",")
+
 
     sparkSession.stop()
   }

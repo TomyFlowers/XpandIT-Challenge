@@ -16,7 +16,8 @@ object Utils {
   }
 
   def saveCSV(df: DataFrame,outputPath: String, fileName: String, delimiter: String): Unit = {
-    df.write
+    df.coalesce(1)
+      .write
       .option("header", value = true)
       .option("escape","\"")
       .mode("overwrite")
