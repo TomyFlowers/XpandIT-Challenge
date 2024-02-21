@@ -25,7 +25,6 @@ object Main {
     val userReviews = Utils.loadCSV(sparkSession,properties.getProperty("app.userReviewsPath"))
     val playStoreApps = Utils.loadCSV(sparkSession,properties.getProperty("app.playStoreAppsPath"))
 
-/*
     //Part 1
     //Converts "Sentiment_Polarity" column from String to Double and transforms NULL to 0
     val castedUserReviews= userReviews.withColumn("Sentiment_Polarity", col("Sentiment_Polarity").cast("double")).na.fill(0.0)
@@ -39,25 +38,24 @@ object Main {
       .orderBy(col("Rating").desc)
 
     Utils.saveCSV(df_2,"outputs","best_apps",",")
-*/
+
     //Part 3
     val windowSpec = Window.partitionBy("App").orderBy(col("Reviews").desc)
 
     val df_3 = playStoreApps
       .withColumn("Rank", rank().over(windowSpec))
-      .orderBy("Rank")
+      .orderBy("Rank") //Not the simplest way to sort. The same result could be achieved simply by sorting for "Reviews", but "orderBy" was causing errors
       .groupBy("App")
       .agg(
-        array_distinct(collect_list("Category")).alias("Categories"),
+        collect_set("Category").alias("Categories"), //array containing all unique "Category" column values
         first("Rating").as("Rating"),
         max(coalesce(col("Reviews"),lit(0))).cast("long").as("Reviews"),
-        when(first("Size").endsWith("M"), regexp_replace(first("Size"), "[^\\d.]+", "").cast("double"))
+        when(first("Size").endsWith("M"), regexp_replace(first("Size"), "[^\\d.]+", "").cast("double")) //regex replaces non-numeric characters with an empty string
           .when(first("Size").endsWith("k"), regexp_replace(first("Size"), "[^\\d.]+", "").cast("double") * 0.001)
           .otherwise(null)
           .as("Size"),
         first("Installs").as("Installs"),
         first("Type").as("Type"),
-        //first(regexp_replace(col("Price"), "[^\\d.]+", "").cast("double")).as("Price"),
         (regexp_replace(first("Price"), "[^\\d.]+", "").cast("double")*0.9).as("Price"),
         first("Content Rating").as("Content_Rating"),
         first("Genres").as("Genres"),
@@ -65,6 +63,10 @@ object Main {
         first("Current Ver").as("Current_Version"),
         first("Android Ver").as("Minimum_Android_Version")
       )
+
+    df_3.filter(col("App")==="8 Ball Pool").show()
+
+    //Part 4
 
     sparkSession.stop()
   }
