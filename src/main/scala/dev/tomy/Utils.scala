@@ -25,10 +25,4 @@ object Utils {
       .csv(s"$outputPath/$fileName")
   }
 
-  def deleteExcessFiles(): Unit = {
-
-  }
-
-
-
 }
