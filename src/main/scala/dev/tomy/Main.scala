@@ -64,10 +64,6 @@ object Main {
         first("Android Ver").as("Minimum_Android_Version")
       )
 
-    df_3.filter(col("App")==="8 Ball Pool").show()
-
-    //Part 4
-
     sparkSession.stop()
   }
 }
