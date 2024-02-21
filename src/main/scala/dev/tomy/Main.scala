@@ -21,7 +21,7 @@ object Main {
       .appName("XpandIT-demo")
       .getOrCreate()
 
-
+    //Load csv files
     val userReviews = Utils.loadCSV(sparkSession,properties.getProperty("app.userReviewsPath"))
     val playStoreApps = Utils.loadCSV(sparkSession,properties.getProperty("app.playStoreAppsPath"))
 
@@ -33,7 +33,7 @@ object Main {
     //Part 2
     val df_2 = playStoreApps
       .withColumn("Rating", coalesce(col("Rating"), lit(0)))
-      .filter(col("Rating").between(4,5)) //Excludes ratings above 5
+      .filter(col("Rating").between(4,5)) //Excludes ratings bellow 4 and above 5
       .repartition(3) //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
 
@@ -63,6 +63,10 @@ object Main {
         first("Current Ver").as("Current_Version"),
         first("Android Ver").as("Minimum_Android_Version")
       )
+
+    //Part 4
+    val df_4 = df_3.join(df_1,"App")
+    Utils.saveParquet(df_4,"outputs","googleplaystore_cleaned")
 
     sparkSession.stop()
   }

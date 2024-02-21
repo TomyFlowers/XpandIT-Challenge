@@ -25,4 +25,14 @@ object Utils {
       .csv(s"$outputPath/$fileName")
   }
 
+  def saveParquet(df: DataFrame, outputPath: String, fileName: String): Unit = {
+    df.write
+      .option("header", value = true)
+      .option("escape","\"")
+      .option("compression","gzip")
+      .mode("overwrite")
+      .parquet(s"$outputPath/$fileName")
+  }
+  //def cleanup
+
 }
