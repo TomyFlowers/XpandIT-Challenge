@@ -2,6 +2,8 @@ package dev.tomy
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import java.io.File
+
 
 object Utils {
 
@@ -22,7 +24,8 @@ object Utils {
       .option("escape","\"")
       .mode("overwrite")
       .option("delimiter", delimiter)
-      .csv(s"$outputPath/$fileName")
+      .csv(s"$outputPath/temp_$fileName") //saves to temp dir
+    cleanup(outputPath,fileName,"csv")
   }
 
   def saveParquet(df: DataFrame, outputPath: String, fileName: String): Unit = {
@@ -32,8 +35,22 @@ object Utils {
       .option("escape","\"")
       .option("compression","gzip")
       .mode("overwrite")
-      .parquet(s"$outputPath/$fileName")
+      .parquet(s"$outputPath/temp_$fileName") //saves to temp dir
+    cleanup(outputPath,fileName,"parquet")
   }
-  //def cleanup
 
+  private def cleanup(outputPath: String, fileName: String, fileType: String): Unit = {
+    val tempDir = new File(s"$outputPath/temp_$fileName")
+
+    if (tempDir.exists()) {
+      val generatedFiles = tempDir.listFiles() //Gets all files from temp dir
+      val mainFile = generatedFiles.find(_.getName.endsWith(fileType)) //gets the main file based on provided file type. Either csv or parquet
+
+      mainFile.get.renameTo(new File(s"$outputPath/$fileName.$fileType")) //Renames the file and moves it to final output dir
+
+      // Remove temporary files and directory
+      generatedFiles.foreach(_.delete())
+      tempDir.delete()
+    }
+  }
 }

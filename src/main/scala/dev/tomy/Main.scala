@@ -16,14 +16,16 @@ object Main {
 
     //Creates Spark Session
     val sparkSession = SparkSession.builder()
-      .master("local[*]")
-      .config("spark.driver.bindAddress","127.0.0.1")
-      .appName("XpandIT-demo")
+      .master(properties.getProperty("spark.master"))
+      .config("spark.driver.bindAddress",properties.getProperty("spark.bindAddress"))
+      .appName(properties.getProperty("spark.appName"))
       .getOrCreate()
 
     //Load csv files
     val userReviews = Utils.loadCSV(sparkSession,properties.getProperty("app.userReviewsPath"))
     val playStoreApps = Utils.loadCSV(sparkSession,properties.getProperty("app.playStoreAppsPath"))
+
+    val outputPath = properties.getProperty("app.outputPath")
 
    //Part 1
    //Converts "Sentiment_Polarity" column from String to Double and transforms NULL to 0
@@ -37,7 +39,7 @@ object Main {
       .repartition(3) //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
 
-    Utils.saveCSV(df_2,"outputs","best_apps","$")
+    Utils.saveCSV(df_2,outputPath,"best_apps","$")
 
     //Part 3
     val windowSpec = Window.partitionBy("App").orderBy(col("Reviews").desc)
@@ -66,7 +68,7 @@ object Main {
 
     //Part 4
     val joinedDF = df_3.join(df_1,"App")
-    Utils.saveParquet(joinedDF,"outputs","googleplaystore_cleaned")
+    Utils.saveParquet(joinedDF,outputPath,"googleplaystore_cleaned")
 
     //Part 5
     val explodedDf_3 = df_3.select(
@@ -80,7 +82,7 @@ object Main {
         avg("Rating").alias("Average_Rating"),
         avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity"))
 
-    Utils.saveParquet(df_4,"outputs","googleplaystore_metrics")
+    Utils.saveParquet(df_4,outputPath,"googleplaystore_metrics")
 
     sparkSession.stop()
   }
