@@ -3,7 +3,7 @@ package dev.tomy
 import java.util.Properties
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{array_distinct, avg, coalesce, col, collect_list, collect_set, desc, first, lit, max, rank, regexp_replace, row_number, to_date, when}
+import org.apache.spark.sql.functions.{avg, coalesce, col, collect_set, countDistinct, explode, first, lit, max, rank, regexp_replace, split, to_date, when}
 
 
 object Main {
@@ -25,8 +25,8 @@ object Main {
     val userReviews = Utils.loadCSV(sparkSession,properties.getProperty("app.userReviewsPath"))
     val playStoreApps = Utils.loadCSV(sparkSession,properties.getProperty("app.playStoreAppsPath"))
 
-    //Part 1
-    //Converts "Sentiment_Polarity" column from String to Double and transforms NULL to 0
+   //Part 1
+   //Converts "Sentiment_Polarity" column from String to Double and transforms NULL to 0
     val castedUserReviews= userReviews.withColumn("Sentiment_Polarity", col("Sentiment_Polarity").cast("double")).na.fill(0.0)
     val df_1 = castedUserReviews.groupBy("App").agg(avg("Sentiment_Polarity").as("Average_Sentiment_Polarity"))
 
@@ -37,7 +37,7 @@ object Main {
       .repartition(3) //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
 
-    Utils.saveCSV(df_2,"outputs","best_apps",",")
+    Utils.saveCSV(df_2,"outputs","best_apps","$")
 
     //Part 3
     val windowSpec = Window.partitionBy("App").orderBy(col("Reviews").desc)
@@ -58,16 +58,32 @@ object Main {
         first("Type").as("Type"),
         (regexp_replace(first("Price"), "[^\\d.]+", "").cast("double")*0.9).as("Price"),
         first("Content Rating").as("Content_Rating"),
-        first("Genres").as("Genres"),
+        split(first("Genres"),";").cast("array<string>").as("Genres"),
         to_date(first("Last Updated"), "MMM dd, yyyy").as("Last_Updated"),
         first("Current Ver").as("Current_Version"),
         first("Android Ver").as("Minimum_Android_Version")
       )
 
     //Part 4
-    val df_4 = df_3.join(df_1,"App")
-    Utils.saveParquet(df_4,"outputs","googleplaystore_cleaned")
+    val joinedDF = df_3.join(df_1,"App")
+    Utils.saveParquet(joinedDF,"outputs","googleplaystore_cleaned")
+
+    //Part 5
+    val explodedDf_3 = df_3.select(
+      col("App"),explode(col("Genres")).alias("Genre"),
+      col("Rating"))
+
+    val df_4 = explodedDf_3.join(userReviews,"App")
+      .groupBy("Genre")
+      .agg(
+        countDistinct("App").alias("Count"),
+        avg("Rating").alias("Average_Rating"),
+        avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity"))
+
+    Utils.saveParquet(df_4,"outputs","googleplaystore_metrics")
 
     sparkSession.stop()
   }
+
+
 }

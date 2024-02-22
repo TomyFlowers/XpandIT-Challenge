@@ -26,7 +26,8 @@ object Utils {
   }
 
   def saveParquet(df: DataFrame, outputPath: String, fileName: String): Unit = {
-    df.write
+    df.coalesce(1)
+      .write
       .option("header", value = true)
       .option("escape","\"")
       .option("compression","gzip")
