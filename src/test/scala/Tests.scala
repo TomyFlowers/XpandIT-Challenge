@@ -9,7 +9,7 @@ import org.scalatest.matchers.must.Matchers
 
 class Tests extends AnyFlatSpec with Matchers {
 
-  "part1" should "convert 'Sentiment_Polarity' column to Double and fill NULL values with 0.0" in {
+  "Part1" should "Crate new data frame with columns App and Average_Sentiment_Polarity" in {
 
     val spark = SparkSession.builder().master("local[*]").config("spark.driver.bindAddress", "127.0.0.1").appName("Part_1 Test").getOrCreate()
     // Given
