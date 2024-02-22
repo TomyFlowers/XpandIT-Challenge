@@ -25,5 +25,6 @@ The dependencies in this project are managed by maven and are listed in the `pom
 - Apache Spark - 2.12.18
 
 ## Notes
-There were some inconsistencies found in the provided .csv files for the challenge, like missing columns.
-But for the sake of simplicity they were left unchanged.
+One of the rows in the `gogoleplaystore.csv` file was missing the
+category column, but for the sake of simplicity it was left unchanged.
+
