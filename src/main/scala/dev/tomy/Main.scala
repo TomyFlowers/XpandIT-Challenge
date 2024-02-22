@@ -36,13 +36,13 @@ object Main {
     sparkSession.stop()
   }
 
-  private def part1(userReviews: DataFrame): DataFrame = {
+   def part1(userReviews: DataFrame): DataFrame = {
     //Converts "Sentiment_Polarity" column from String to Double and transforms NULL to 0
     val castedUserReviews = userReviews.withColumn("Sentiment_Polarity", col("Sentiment_Polarity").cast("double")).na.fill(0.0)
     castedUserReviews.groupBy("App").agg(avg("Sentiment_Polarity").as("Average_Sentiment_Polarity"))
   }
 
-  private def part2(playStoreApps: DataFrame, outputPath: String): Unit = {
+  def part2(playStoreApps: DataFrame, outputPath: String): Unit = {
     val df_2 = playStoreApps
       .withColumn("Rating", coalesce(col("Rating"), lit(0)))
       .filter(col("Rating").between(4,5)) //Excludes ratings bellow 4 and above 5
@@ -52,7 +52,7 @@ object Main {
     Utils.saveCSV(df_2,outputPath,"best_apps","$")
   }
 
-  private def part3(playStoreApps: DataFrame): DataFrame = {
+  def part3(playStoreApps: DataFrame): DataFrame = {
     val windowSpec = Window.partitionBy("App").orderBy(col("Reviews").desc)
 
     val df_3 = playStoreApps
@@ -80,12 +80,12 @@ object Main {
     df_3
   }
 
-  private def part4(df_1: DataFrame, df_3: DataFrame, outputPath: String ): Unit = {
+  def part4(df_1: DataFrame, df_3: DataFrame, outputPath: String ): Unit = {
     val joinedDF = df_3.join(df_1, "App")
     Utils.saveParquet(joinedDF, outputPath, "googleplaystore_cleaned")
   }
 
-  private def part5(df_3: DataFrame, userReviews: DataFrame, outputPath: String): Unit = {
+  def part5(df_3: DataFrame, userReviews: DataFrame, outputPath: String): Unit = {
     val explodedDf_3 = df_3.select(
       col("App"), explode(col("Genres")).alias("Genre"),
       col("Rating"))
