@@ -7,7 +7,7 @@ running the program in it's default configuration.
 ## Configuration
 The project can be configured through the config.properties file,
 that allows the configuration of the SparkSession and the configuration
-of some Application Parameters, like the input files location and the output folder.
+of some Application Parameters, like the location of the input files and the output folder.
 
 ## Running
 The program can be run by importing it into an IDE as a Maven project, and creating a 
