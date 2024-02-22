@@ -28,7 +28,7 @@ object Main {
     val outputPath = properties.getProperty("app.outputPath")
 
     val df_1 = part1(userReviews)
-    part2(playStoreApps,outputPath)
+    val df_2 = part2(playStoreApps,outputPath)
     val df_3 = part3(playStoreApps)
     part4(df_1, df_3, outputPath)
     part5(df_3, userReviews, outputPath)
@@ -42,14 +42,16 @@ object Main {
     castedUserReviews.groupBy("App").agg(avg("Sentiment_Polarity").as("Average_Sentiment_Polarity"))
   }
 
-  def part2(playStoreApps: DataFrame, outputPath: String): Unit = {
+  def part2(playStoreApps: DataFrame, outputPath: String): DataFrame = {
     val df_2 = playStoreApps
-      .withColumn("Rating", coalesce(col("Rating"), lit(0)))
+      .withColumn("Rating", coalesce(col("Rating").cast("double"), lit(0)).cast("double"))
       .filter(col("Rating").between(4,5)) //Excludes ratings bellow 4 and above 5
       .repartition(3) //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
 
     Utils.saveCSV(df_2,outputPath,"best_apps","$")
+
+    df_2
   }
 
   def part3(playStoreApps: DataFrame): DataFrame = {

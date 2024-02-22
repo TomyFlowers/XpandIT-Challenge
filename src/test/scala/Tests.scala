@@ -9,10 +9,10 @@ import org.scalatest.matchers.must.Matchers
 
 class Tests extends AnyFlatSpec with Matchers {
 
-  "Part1" should "Crate new data frame with columns App and Average_Sentiment_Polarity" in {
+  "Part1" should "Create new data frame with columns App and Average_Sentiment_Polarity" in {
 
-    val spark = SparkSession.builder().master("local[*]").config("spark.driver.bindAddress", "127.0.0.1").appName("Part_1 Test").getOrCreate()
-    // Given
+    val spark = sessionBuilder()
+
     import spark.implicits._
 
     val testData = Seq(
@@ -34,8 +34,41 @@ class Tests extends AnyFlatSpec with Matchers {
     )
 
     val expectedDF = expectedData.toDF(expectedSchema: _*)
-
     assertDataFrameApproximateEquals(resultDF, expectedDF)
+
+    spark.stop()
+  }
+
+  "Part2" should "Obtain Apps with Rating greater or equal to 4.0, sorted in descending order" in {
+
+    val spark = sessionBuilder()
+
+    import spark.implicits._
+
+    val testData = Seq(
+      ("App1", "4.0"),
+      ("App2", "6.0"),
+      ("App3", "3.9"),
+      ("App4", "4.5"),
+      ("App5", "4.2")
+    )
+
+    val testDF = testData.toDF("App", "Rating")
+    val resultDF = Main.part2(testDF,"test_outputs")
+
+    val expectedSchema = List("App", "Rating")
+    val expectedData = Seq(
+      ("App4", 4.5),
+      ("App5", 4.2),
+      ("App1", 4.0)
+    )
+
+    val expectedDF = expectedData.toDF(expectedSchema: _*)
+
+    expectedDF.printSchema()
+    resultDF.printSchema()
+
+    assertDataFrameEquals(resultDF, expectedDF)
   }
 
   private def assertDataFrameApproximateEquals(actualDF: DataFrame, expectedDF: DataFrame): Unit = {
@@ -43,6 +76,10 @@ class Tests extends AnyFlatSpec with Matchers {
   }
 
   private def assertDataFrameEquals(actualDF: DataFrame, expectedDF: DataFrame): Unit = {
-    assert(actualDF.collect() === expectedDF.collect())
+    assert(actualDF.collectAsList() === expectedDF.collectAsList())
+  }
+
+  private def sessionBuilder(): SparkSession = {
+    SparkSession.builder().master("local[*]").config("spark.driver.bindAddress", "127.0.0.1").appName("Part_1 Test").getOrCreate()
   }
 }
