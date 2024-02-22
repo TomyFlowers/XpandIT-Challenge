@@ -28,7 +28,7 @@ object Main {
     val outputPath = properties.getProperty("app.outputPath")
 
     val df_1 = part1(userReviews)
-    val df_2 = part2(playStoreApps,outputPath)
+    part2(playStoreApps,outputPath)
     val df_3 = part3(playStoreApps)
     part4(df_1, df_3, outputPath)
     part5(df_3, userReviews, outputPath)
@@ -44,7 +44,7 @@ object Main {
 
   def part2(playStoreApps: DataFrame, outputPath: String): DataFrame = {
     val df_2 = playStoreApps
-      .withColumn("Rating", coalesce(col("Rating").cast("double"), lit(0)).cast("double"))
+      .withColumn("Rating", coalesce(col("Rating"), lit(0)))
       .filter(col("Rating").between(4,5)) //Excludes ratings bellow 4 and above 5
       .repartition(3) //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
@@ -66,7 +66,7 @@ object Main {
         first("Rating").as("Rating"),
         max(coalesce(col("Reviews"), lit(0))).cast("long").as("Reviews"),
         when(first("Size").endsWith("M"), regexp_replace(first("Size"), "[^\\d.]+", "").cast("double")) //regex replaces non-numeric characters with an empty string
-          .when(first("Size").endsWith("k"), regexp_replace(first("Size"), "[^\\d.]+", "").cast("double") * 0.001)
+          .when(first("Size").endsWith("K"), regexp_replace(first("Size"), "[^\\d.]+", "").cast("double") * 0.001)
           .otherwise(null)
           .as("Size"),
         first("Installs").as("Installs"),
@@ -78,7 +78,6 @@ object Main {
         first("Current Ver").as("Current_Version"),
         first("Android Ver").as("Minimum_Android_Version")
       )
-
     df_3
   }
 
