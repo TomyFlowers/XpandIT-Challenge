@@ -28,10 +28,13 @@ object Main {
     val outputPath = properties.getProperty("app.outputPath")
 
     val df_1 = part1(userReviews)
-    part2(playStoreApps,outputPath)
+    val df_2 = part2(playStoreApps)
+    Utils.saveCSV(df_2,outputPath,"best_apps","$")
     val df_3 = part3(playStoreApps)
-    part4(df_1, df_3, outputPath)
-    part5(df_3, userReviews, outputPath)
+    val joinedDF = part4(df_1, df_3)
+    Utils.saveParquet(joinedDF, outputPath, "googleplaystore_cleaned")
+    val df_4 = part5(df_3, userReviews)
+    Utils.saveParquet(df_4, outputPath, "googleplaystore_metrics")
 
     sparkSession.stop()
   }
@@ -42,16 +45,12 @@ object Main {
     castedUserReviews.groupBy("App").agg(avg("Sentiment_Polarity").as("Average_Sentiment_Polarity"))
   }
 
-  def part2(playStoreApps: DataFrame, outputPath: String): DataFrame = {
-    val df_2 = playStoreApps
+  def part2(playStoreApps: DataFrame): DataFrame = {
+     playStoreApps
       .withColumn("Rating", coalesce(col("Rating"), lit(0)))
       .filter(col("Rating").between(4,5)) //Excludes ratings bellow 4 and above 5
       .repartition(3) //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
-
-    Utils.saveCSV(df_2,outputPath,"best_apps","$")
-
-    df_2
   }
 
   def part3(playStoreApps: DataFrame): DataFrame = {
@@ -81,23 +80,20 @@ object Main {
     df_3
   }
 
-  def part4(df_1: DataFrame, df_3: DataFrame, outputPath: String ): Unit = {
-    val joinedDF = df_3.join(df_1, "App")
-    Utils.saveParquet(joinedDF, outputPath, "googleplaystore_cleaned")
+  def part4(df_1: DataFrame, df_3: DataFrame): DataFrame = {
+    df_3.join(df_1, "App")
   }
 
-  def part5(df_3: DataFrame, userReviews: DataFrame, outputPath: String): Unit = {
+  def part5(df_3: DataFrame, userReviews: DataFrame): DataFrame = {
     val explodedDf_3 = df_3.select(
       col("App"), explode(col("Genres")).alias("Genre"),
       col("Rating"))
 
-    val df_4 = explodedDf_3.join(userReviews, "App")
+     explodedDf_3.join(userReviews, "App")
       .groupBy("Genre")
       .agg(
         countDistinct("App").alias("Count"),
         avg("Rating").alias("Average_Rating"),
         avg("Sentiment_Polarity").alias("Average_Sentiment_Polarity"))
-
-    Utils.saveParquet(df_4, outputPath, "googleplaystore_metrics")
   }
 }
