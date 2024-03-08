@@ -49,7 +49,7 @@ object Main {
      playStoreApps
       .withColumn("Rating", coalesce(col("Rating"), lit(0)))
       .filter(col("Rating").between(4,5)) //Excludes ratings bellow 4 and above 5
-      .repartition(3) //Error caused by sorting without repartitioning
+      .repartition() //Error caused by sorting without repartitioning
       .orderBy(col("Rating").desc)
   }
 
